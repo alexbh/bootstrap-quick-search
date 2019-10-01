@@ -1,8 +1,10 @@
 /* ========================================================================
- * Quick Search: bootstrap-quick-search.js v0.9.1
+ * Quick Search: bootstrap-quick-search.js v0.9.2
  * ========================================================================
  * Copyright 2015 Martin Stanek, Twitter: @koucik, Github: @skywalkapps
  * Licensed under MIT (https://github.com/skywalkapps/bootstrap-quick-search/blob/master/LICENSE)
+ * ========================================================================
+ * Ignore selector feature added by Alexandre Carvalho https://github.com/alexbh on Oct/2019
  * ======================================================================== */
 
 
@@ -30,22 +32,50 @@
   QuickSearch.prototype.search = function (e) {
     var self = $(e.target)
     var itemsSelector = self.data('search-target')
+    var headerSelector = self.data('header')
+    var tableSelector = self.data('table')
+	var ignoreSelector = self.data('ignore')
     var val = self.val().toLowerCase()
 
     // Indicate that input search input is filled
     if (val.length > 0) self.parent().addClass(e.data.activeClass)
 
     $(itemsSelector).each(function(){
-      var text = $(this).text().toLowerCase()
+      //clone object and remove the ignored elements before searching
+      var element = $(this).clone()
+      element.find(ignoreSelector).remove();
+
+      var text = element.text().toLowerCase();
 
       if (text.indexOf(val) !== -1) {
         $(this).removeClass('hidden')
+        $(this).addClass('displayed')
       }
       else {
         $(this).addClass('hidden')
+        $(this).removeClass('displayed')
       }
     })
-
+    
+$(headerSelector).each(function(){
+        var text = $(this).text().toLowerCase()
+        
+        // if header is in search result -> hide items and header
+        if (text.indexOf(val) !== -1) {
+          $(this).parent($(tableSelector)).removeClass('hidden')
+          $(this).parent($(tableSelector)).addClass('displayed')
+          $(this).parent($(tableSelector)).find('.hidden').addClass('displayed')
+          $(this).parent($(tableSelector)).find('.hidden').removeClass('hidden')
+        } // if all items are hidden -> also hide the header
+        else if ($(this).parent($(tableSelector)).find('.displayed').length == 0) {
+          $(this).parent($(tableSelector)).addClass('hidden')
+          $(this).parent($(tableSelector)).removeClass('displayed')
+        } // if there are items -> display whole table
+        else {
+        	$(this).parent($(tableSelector)).removeClass('hidden')
+            $(this).parent($(tableSelector)).addClass('displayed')
+        }
+      })
   }
 
 
@@ -61,8 +91,11 @@
     // Clear the input field
     input.val('')
 
-    // Remove hidden from items
+    // Remove classes from items
     $(input.data('search-target')).removeClass('hidden')
+    $(input.data('search-target')).removeClass('displayed')
+    $(input.data('header')).removeClass('hidden')
+    $(input.data('table')).removeClass('hidden')
 
     // Remove active class
     input.parent().removeClass(e.data.activeClass)
